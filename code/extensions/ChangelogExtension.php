@@ -12,6 +12,11 @@ class ChangelogExtension extends DataObjectDecorator {
 	protected $current, $next;
 
 	/**
+	 * @var array
+	 */
+	protected $messages = array();
+
+	/**
 	 * Returns the {@link Changelog} object associated with the current version.
 	 * If one does not exist a new object is returned but not written.
 	 *
@@ -77,6 +82,22 @@ class ChangelogExtension extends DataObjectDecorator {
 	}
 
 	/**
+	 * Stores the field edit summaries for later use.
+	 *
+	 * @param array $raw
+	 */
+	public function saveFieldChangelogs($raw) {
+		$raw        = ArrayLib::invert($raw['new']);
+		$messages   = array();
+
+		foreach ($raw as $data) if ($data['FieldName']) {
+			$messages[$data['FieldName']] = $data['EditSummary'];
+		}
+
+		$this->messages = $messages;
+	}
+
+	/**
 	 * Writes a new changelog record if a version has been created.
 	 */
 	public function onAfterWrite() {
@@ -93,10 +114,32 @@ class ChangelogExtension extends DataObjectDecorator {
 			return;
 		}
 
+		// create the new main changelog entry
 		$log = $this->getNextChangelog();
 		$log->SubjectID = $this->owner->ID;
 		$log->Version   = $this->owner->Version;
 		$log->write();
+
+		// and then create a field changelog entry for each field change, unless
+		// we have a new record
+		if (!$this->owner->isChanged('ID')) {
+			$changes = $this->owner->getChangedFields(true, 2);
+
+			foreach ($changes as $field => $change) {
+				if ($field == 'Version') continue;
+
+				$fieldLog = new FieldChangelog();
+				$fieldLog->FieldName   = $field;
+				$fieldLog->Original    = $change['before'];
+				$fieldLog->Changed     = $change['after'];
+
+				if (isset($this->messages[$field])) {
+					$fieldLog->EditSummary = $this->messages[$field];
+				}
+
+				$log->FieldChangelogs()->add($fieldLog);
+			}
+		}
 
 		$this->current = $log;
 		$this->next    = null;
@@ -106,10 +149,36 @@ class ChangelogExtension extends DataObjectDecorator {
 	 * @param FieldSet $fields
 	 */
 	public function updateCMSFields($fields) {
+		$names = ArrayLib::valuekey(array_merge(
+			array_keys($this->owner->inheritedDatabaseFields()),
+			array('ClassName', 'LastEdited')
+		));
+
+		foreach ($names as $name) {
+			if ($title = $this->owner->fieldLabel($name)) {
+				$names[$name] = $title;
+			}
+		}
+
 		$fields->addFieldsToTab('Root.Changelog', array(
 			new HeaderField('ChangelogHeader', 'Changelog'),
-			new TextField('EditSummary', 'Edit summary')
+			new TextField('EditSummary', 'Edit summary'),
+			new HeaderField('FieldChangelogeHeader', 'Field Change Log'),
+			$table = new TableField('FieldChangelogs', 'FieldChangelog', array(
+				'FieldName'   => 'Field',
+				'Original'    => 'Original Value',
+				'Changed'     => 'Changed Value',
+				'EditSummary' => 'Edit Summary'
+			), array(
+				'FieldName'   => new DropdownField('FieldName', '', $names, '', null, '(choose)'),
+				'Original'    => 'ReadonlyField',
+				'Changed'     => 'ReadonlyField',
+				'EditSummary' => 'TextField'
+			), null, null, false)
 		));
+
+		$table->setCustomSourceItems(new DataObjectSet());
+		$table->setPermissions(array('add'));
 	}
 
 }

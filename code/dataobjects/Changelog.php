@@ -20,6 +20,10 @@ class Changelog extends DataObject {
 		'Version'      => true
 	);
 
+	public static $has_many = array(
+		'FieldChangelogs' => 'FieldChangelog'
+	);
+
 	/**
 	 * Returns the data object this changelog is attached to.
 	 *

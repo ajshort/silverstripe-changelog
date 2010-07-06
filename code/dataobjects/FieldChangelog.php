@@ -30,7 +30,9 @@ class FieldChangelog extends DataObject {
 	 * @return string
 	 */
 	public function getFieldType() {
-		return $this->Changelog()->getSubject()->db($this->FieldName);
+		return Extension::get_classname_without_arguments(
+			$this->Changelog()->getSubject()->db($this->FieldName)
+		);
 	}
 
 	/**

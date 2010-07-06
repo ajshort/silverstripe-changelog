@@ -163,7 +163,7 @@ class ChangelogExtension extends DataObjectDecorator {
 		$fields->addFieldsToTab('Root.Changelog', array(
 			new HeaderField('ChangelogHeader', 'Changelog'),
 			new TextField('EditSummary', 'Edit summary'),
-			new HeaderField('FieldChangelogeHeader', 'Field Change Log'),
+			new HeaderField('FieldChangelogHeader', 'Field Change Log'),
 			$table = new TableField('FieldChangelogs', 'FieldChangelog', array(
 				'FieldName'   => 'Field',
 				'Original'    => 'Original Value',

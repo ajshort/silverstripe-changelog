@@ -18,8 +18,47 @@ class FieldChangelog extends DataObject {
 	);
 
 	public static $summary_fields = array(
-		'FieldName',
-		'EditSummary'
+		'FieldName'       => 'Field',
+		'OriginalSummary' => 'Original',
+		'ChangedSummary'  => 'Changed',
+		'EditSummary'     => 'Edit Summary'
 	);
+
+	/**
+	 * Returns the DB field type this changelog corresponds to.
+	 *
+	 * @return string
+	 */
+	public function getFieldType() {
+		return $this->Changelog()->getSubject()->db($this->FieldName);
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getOriginalSummary() {
+		return $this->getFieldSummary('Original');
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getChangedSummary() {
+		return $this->getFieldSummary('Changed');
+	}
+
+	/**
+	 * @param  string $field
+	 * @return string
+	 */
+	public function getFieldSummary($field) {
+		$field = DBField::create($this->getFieldType(), $this->$field);
+
+		if (method_exists($field, 'LimitCharacters')) {
+			return $field->LimitCharacters(30);
+		} else {
+			return $field;
+		}
+	}
 
 }

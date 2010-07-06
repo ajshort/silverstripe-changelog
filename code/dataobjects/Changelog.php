@@ -74,7 +74,10 @@ class Changelog extends DataObject {
 			new TextField('EditSummary', 'Edit summary'),
 			new CheckboxField('WasPublished', 'Was published?'),
 			new HeaderField('FieldChangelogHeader', 'Field Change Log'),
-			new TableListField('FieldChangelogs', 'FieldChangelog'),
+			new TableListField(
+				'FieldChangelogs', 'FieldChangelog', null,
+				'"ChangelogID" = ' . $this->ID
+			),
 			new ToggleCompositeField('ViewDiffHeader', 'View Differences', array(
 				new LiteralField('Diff', $diff->renderWith('ChangelogDiff'))
 			))

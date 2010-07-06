@@ -160,25 +160,40 @@ class ChangelogExtension extends DataObjectDecorator {
 			}
 		}
 
+		$fieldNames = new DropdownField(
+			'FieldName', '', $names, '', null, '(choose)'
+		);
+
+		$filter = sprintf(
+			'"SubjectClass" = \'%s\' AND "SubjectID" = %d',
+			$this->owner->class, $this->owner->ID
+		);
+
 		$fields->addFieldsToTab('Root.Changelog', array(
 			new HeaderField('ChangelogHeader', 'Changelog'),
 			new TextField('EditSummary', 'Edit summary'),
 			new HeaderField('FieldChangelogHeader', 'Field Change Log'),
-			$table = new TableField('FieldChangelogs', 'FieldChangelog', array(
+			$fields = new TableField('FieldChangelogs', 'FieldChangelog', array(
 				'FieldName'   => 'Field',
 				'Original'    => 'Original Value',
 				'Changed'     => 'Changed Value',
 				'EditSummary' => 'Edit Summary'
 			), array(
-				'FieldName'   => new DropdownField('FieldName', '', $names, '', null, '(choose)'),
+				'FieldName'   => $fieldNames,
 				'Original'    => 'ReadonlyField',
 				'Changed'     => 'ReadonlyField',
 				'EditSummary' => 'TextField'
-			), null, null, false)
+			), null, null, false),
+			new ToggleCompositeField('PastChangelogs', 'Past Changelogs', array(
+				$past = new ComplexTableField(
+					$this, 'Changelogs', 'Changelog', null, null, $filter
+				)
+			))
 		));
 
-		$table->setCustomSourceItems(new DataObjectSet());
-		$table->setPermissions(array('add'));
+		$fields->setCustomSourceItems(new DataObjectSet());
+		$fields->setPermissions(array('add'));
+		$past->setPermissions(array('show'));
 	}
 
 }

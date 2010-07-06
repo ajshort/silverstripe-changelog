@@ -17,4 +17,9 @@ class FieldChangelog extends DataObject {
 		'Changelog' => 'Changelog'
 	);
 
+	public static $summary_fields = array(
+		'FieldName',
+		'EditSummary'
+	);
+
 }

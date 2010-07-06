@@ -24,6 +24,14 @@ class Changelog extends DataObject {
 		'FieldChangelogs' => 'FieldChangelog'
 	);
 
+	public static $default_sort = 'Created DESC';
+
+	public static $summary_fields = array(
+		'Version',
+		'Created',
+		'EditSummary'
+	);
+
 	/**
 	 * Returns the data object this changelog is attached to.
 	 *
@@ -33,6 +41,20 @@ class Changelog extends DataObject {
 		return Versioned::get_version(
 			$this->SubjectClass, $this->SubjectID, $this->Version
 		);
+	}
+
+	/**
+	 * @return FieldSet
+	 */
+	public function getCMSFields() {
+		return new FieldSet(new TabSet('Root', new Tab('Main',
+			new HeaderField('ChangelogHeader', 'Changelog'),
+			new NumericField('Version', 'Version'),
+			new DateField('Created', 'Created'),
+			new TextField('EditSummary', 'Edit summary'),
+			new HeaderField('FieldChangelogHeader', 'Field Change Log'),
+			new TableListField('FieldChangelogs', 'FieldChangelog')
+		)));
 	}
 
 }

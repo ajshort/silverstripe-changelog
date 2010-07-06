@@ -75,6 +75,27 @@ class ChangelogExtension extends DataObjectDecorator {
 	}
 
 	/**
+	 * Returns a map of field name to field title of all the changeloggable
+	 * fields
+	 *
+	 * @return array
+	 */
+	public function getChangelogFields() {
+		$fields = ArrayLib::valuekey(array_merge(
+			array_keys($this->owner->inheritedDatabaseFields()),
+			array('ClassName', 'LastEdited')
+		));
+
+		foreach ($fields as $field) {
+			if ($title = $this->owner->fieldLabel($field)) {
+				$fields[$field] = $title;
+			}
+		}
+
+		return $fields;
+	}
+
+	/**
 	 * @param string $summary
 	 */
 	public function saveEditSummary($summary) {
@@ -149,20 +170,14 @@ class ChangelogExtension extends DataObjectDecorator {
 	 * @param FieldSet $fields
 	 */
 	public function updateCMSFields($fields) {
-		$names = ArrayLib::valuekey(array_merge(
-			array_keys($this->owner->inheritedDatabaseFields()),
-			array('ClassName', 'LastEdited')
-		));
+		Requirements::javascript(THIRDPARTY_DIR . '/jquery/jquery.js');
+		Requirements::javascript('changelog/javascript/ChangelogForm.js');
 
-		foreach ($names as $name) {
-			if ($title = $this->owner->fieldLabel($name)) {
-				$names[$name] = $title;
+		foreach (array_keys($this->getChangelogFields()) as $field) {
+			if ($field = $fields->dataFieldByName($field)) {
+				$field->addExtraClass('changelog');
 			}
 		}
-
-		$fieldNames = new DropdownField(
-			'FieldName', '', $names, '', null, '(choose)'
-		);
 
 		$filter = sprintf(
 			'"SubjectClass" = \'%s\' AND "SubjectID" = %d',
@@ -172,18 +187,17 @@ class ChangelogExtension extends DataObjectDecorator {
 		$fields->addFieldsToTab('Root.Changelog', array(
 			new HeaderField('ChangelogHeader', 'Changelog'),
 			new TextField('EditSummary', 'Edit summary'),
-			new HeaderField('FieldChangelogHeader', 'Field Change Log'),
-			$fields = new TableField('FieldChangelogs', 'FieldChangelog', array(
-				'FieldName'   => 'Field',
-				'Original'    => 'Original Value',
-				'Changed'     => 'Changed Value',
-				'EditSummary' => 'Edit Summary'
-			), array(
-				'FieldName'   => $fieldNames,
-				'Original'    => 'ReadonlyField',
-				'Changed'     => 'ReadonlyField',
-				'EditSummary' => 'TextField'
-			), null, null, false),
+			new ToggleCompositeField('FieldChangelogs', 'Field Changelogs', array(
+				$fields = new TableField('FieldChangelogs', 'FieldChangelog',
+					null,
+					array(
+						'FieldName'       => 'ReadonlyField',
+						'OriginalSummary' => 'DatalessField',
+						'ChangedSummary'  => 'DatalessField',
+						'EditSummary'     => 'TextField'
+					),
+					null, null, false)
+			)),
 			new ToggleCompositeField('PastChangelogs', 'Past Changelogs', array(
 				$past = new ComplexTableField(
 					$this, 'Changelogs', 'Changelog', null, null, $filter
@@ -192,7 +206,8 @@ class ChangelogExtension extends DataObjectDecorator {
 		));
 
 		$fields->setCustomSourceItems(new DataObjectSet());
-		$fields->setPermissions(array('add'));
+		$fields->setPermissions(array('show'));
+		$fields->showAddRow = false;
 		$past->setPermissions(array('show'));
 	}
 

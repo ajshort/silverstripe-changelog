@@ -21,14 +21,14 @@ class Changelog extends DataObject {
 	);
 
 	/**
-	 * Returns the data object this changelog is attached to. Note that this is
-	 * used instead of the default has_one implementation to allow connections
-	 * to multiple classes.
+	 * Returns the data object this changelog is attached to.
 	 *
 	 * @return DataObject
 	 */
 	public function getSubject() {
-		return DataObject::get_by_id($this->SubjectClass, $this->SubjectID);
+		return Versioned::get_version(
+			$this->SubjectClass, $this->SubjectID, $this->Version
+		);
 	}
 
 }

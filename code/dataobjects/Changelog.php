@@ -33,7 +33,7 @@ class Changelog extends DataObject {
 	);
 
 	/**
-	 * Returns the data object this changelog is attached to.
+	 * Returns the data object this is attached to.
 	 *
 	 * @return DataObject
 	 */
@@ -44,17 +44,45 @@ class Changelog extends DataObject {
 	}
 
 	/**
+	 * Returns the most recent version of the subject this is attached to.
+	 *
+	 * @return DataObject
+	 */
+	public function getLatestSubject() {
+		return DataObject::get_by_id($this->SubjectClass, $this->SubjectID);
+	}
+
+	/**
 	 * @return FieldSet
 	 */
 	public function getCMSFields() {
+		if ($this->Version > 1) {
+			$from = Versioned::get_version(
+				$this->SubjectClass, $this->SubjectID, $this->Version - 1
+			);
+		} else {
+			$from = null;
+		}
+
+		$diff = new DataDifferencer($from, $this->getSubject());
+		$diff->ignoreFields('LastEdited', 'WasPublished');
+
 		return new FieldSet(new TabSet('Root', new Tab('Main',
 			new HeaderField('ChangelogHeader', 'Changelog'),
 			new NumericField('Version', 'Version'),
 			new DateField('Created', 'Created'),
 			new TextField('EditSummary', 'Edit summary'),
+			new CheckboxField('WasPublished', 'Was published?'),
 			new HeaderField('FieldChangelogHeader', 'Field Change Log'),
-			new TableListField('FieldChangelogs', 'FieldChangelog')
+			new TableListField('FieldChangelogs', 'FieldChangelog'),
+			new ToggleCompositeField('ViewDiffHeader', 'View Differences', array(
+				new LiteralField('Diff', $diff->renderWith('ChangelogDiff'))
+			))
 		)));
+	}
+
+	public function getRequirementsForPopup() {
+		Requirements::css('changelog/css/ChangelogDiff.css');
 	}
 
 }

@@ -1,0 +1,32 @@
+.diff {
+}
+
+.diff dt {
+	font-size: 11px;
+	margin-top: 10px;
+	font-weight: bold;
+}
+
+.diff dd {
+	margin-left: 0;
+	background: #F4F4F4;
+	border: 1px solid #CCC;
+	padding: 5px;
+}
+
+.diff ins, .diff del {
+	padding: 1px;
+	border-style: solid;
+	border-width: 1px;
+	text-decoration: none;
+}
+
+.diff ins {
+	background: #DDFFDD;
+	border-color: #00AA00;
+}
+
+.diff del {
+	background: #FFDDDD;
+	border-color: #CC0000;
+}

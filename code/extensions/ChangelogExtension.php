@@ -111,7 +111,7 @@ class ChangelogExtension extends DataObjectDecorator {
 		$raw        = ArrayLib::invert($raw['new']);
 		$messages   = array();
 
-		foreach ($raw as $data) if ($data['FieldName']) {
+		if($raw) foreach ($raw as $data) if ($data['FieldName']) {
 			$messages[$data['FieldName']] = $data['EditSummary'];
 		}
 

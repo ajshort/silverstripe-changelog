@@ -14,37 +14,24 @@
 	 * Creates a changelog table row.
 	 */
 	var createChangelogRow = function(table, field, original, changed) {
-		var row = $('<tr></tr>')
-			.attr('id', 'New_' + (table.find('tbody tr').length + 1))
-			.addClass('row')
-			.appendTo(table.find('tbody'));
+		var row = $('<tr>').appendTo(table.find('tbody'));
 
-		var fieldCol = $('<td></td>')
-			.text(field)
-			.appendTo(row);
+		$('<input>', {
+			type:  'hidden',
+			val:   field,
+			name:  'FieldChangelogs[new][FieldName][]'
+		}).appendTo(row);
 
-		$('<input type="hidden">')
-			.attr('name', 'FieldChangelogs[new][FieldName][]')
-			.val(field)
-			.appendTo(fieldCol);
+		var summaryInput = $('<input>', {
+			type:  'text',
+			class: 'text',
+			name:  'FieldChangelogs[new][EditSummary][]'
+		});
 
-		$('<td></td>')
-			.addClass('original')
-			.text(summarise(original))
-			.appendTo(row)
-
-		$('<td></td>')
-			.addClass('changed')
-			.text(summarise(changed))
-			.appendTo(row)
-
-		var editSummaryCol = $('<td></td>')
-			.appendTo(row)
-
-		$('<input type="text">')
-			.addClass('text')
-			.attr('name', 'FieldChangelogs[new][EditSummary][]')
-			.appendTo(editSummaryCol);
+		$('<td>', { text: field }).appendTo(row);
+		$('<td>', { class: 'original', text: summarise(original) }).appendTo(row);
+		$('<td>', { class: 'changed', text: summarise(changed) }).appendTo(row);
+		$('<td>', { html: summaryInput }).appendTo(row);
 	}
 
 	/**

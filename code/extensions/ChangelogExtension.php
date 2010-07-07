@@ -75,24 +75,61 @@ class ChangelogExtension extends DataObjectDecorator {
 	}
 
 	/**
-	 * Returns a map of field name to field title of all the changeloggable
-	 * fields
+	 * Returns an array of all form fields to add changelog support to a form.
 	 *
-	 * @return array
+	 * @return CompositeField
 	 */
 	public function getChangelogFields() {
-		$fields = ArrayLib::valuekey(array_merge(
+		Requirements::javascript(THIRDPARTY_DIR . '/jquery/jquery.js');
+		Requirements::javascript(CHANGELOG_DIR  . '/javascript/ChangelogForm.js');
+
+		$fieldLogs = new TableField(
+			'FieldChangelogs', 'FieldChangelog', null,
+			array(
+				'FieldName'       => 'ReadonlyField',
+				'OriginalSummary' => 'DatalessField',
+				'ChangedSummary'  => 'DatalessField',
+				'EditSummary'     => 'TextField'
+			)
+		);
+		$fieldLogs->setCustomSourceItems(new DataObjectSet());
+		$fieldLogs->setPermissions(array('show'));
+		$fieldLogs->showAddRow = false;
+
+		$pastLogs = new ComplexTableField(
+			$this, 'Changelogs', 'Changelog', null, null, sprintf(
+				'"SubjectClass" = \'%s\' AND "SubjectID" = %d',
+				$this->owner->class, $this->owner->ID
+			)
+		);
+		$pastLogs->setPermissions(array('show'));
+
+		return array(
+			new HeaderField('ChangelogHeader', 'Changelog'),
+			new TextField('EditSummary', 'Edit summary'),
+			new ToggleCompositeField(
+				'FieldChangelogs', 'Field Changelogs', array($fieldLogs)
+			),
+			new ToggleCompositeField(
+				'PastChangelogs', 'Past Changelogs', array($pastLogs)
+			)
+		);
+	}
+
+	/**
+	 * Annotates all fields in a FieldSet that are changeloggable.
+	 *
+	 * @param FieldSet $fields
+	 */
+	public function annotateChangelogFields($fields) {
+		$names = array_merge(
 			array_keys($this->owner->inheritedDatabaseFields()),
 			array('ClassName', 'LastEdited')
-		));
+		);
 
-		foreach ($fields as $field) {
-			if ($title = $this->owner->fieldLabel($field)) {
-				$fields[$field] = $title;
-			}
+		foreach ($names as $name) if ($f = $fields->dataFieldByName($name)) {
+			$f->addExtraClass('changelog');
 		}
-
-		return $fields;
 	}
 
 	/**
@@ -170,45 +207,8 @@ class ChangelogExtension extends DataObjectDecorator {
 	 * @param FieldSet $fields
 	 */
 	public function updateCMSFields($fields) {
-		Requirements::javascript(THIRDPARTY_DIR . '/jquery/jquery.js');
-		Requirements::javascript('changelog/javascript/ChangelogForm.js');
-
-		foreach (array_keys($this->getChangelogFields()) as $field) {
-			if ($field = $fields->dataFieldByName($field)) {
-				$field->addExtraClass('changelog');
-			}
-		}
-
-		$filter = sprintf(
-			'"SubjectClass" = \'%s\' AND "SubjectID" = %d',
-			$this->owner->class, $this->owner->ID
-		);
-
-		$fields->addFieldsToTab('Root.Changelog', array(
-			new HeaderField('ChangelogHeader', 'Changelog'),
-			new TextField('EditSummary', 'Edit summary'),
-			new ToggleCompositeField('FieldChangelogs', 'Field Changelogs', array(
-				$fields = new TableField('FieldChangelogs', 'FieldChangelog',
-					null,
-					array(
-						'FieldName'       => 'ReadonlyField',
-						'OriginalSummary' => 'DatalessField',
-						'ChangedSummary'  => 'DatalessField',
-						'EditSummary'     => 'TextField'
-					),
-					null, null, false)
-			)),
-			new ToggleCompositeField('PastChangelogs', 'Past Changelogs', array(
-				$past = new ComplexTableField(
-					$this, 'Changelogs', 'Changelog', null, null, $filter
-				)
-			))
-		));
-
-		$fields->setCustomSourceItems(new DataObjectSet());
-		$fields->setPermissions(array('show'));
-		$fields->showAddRow = false;
-		$past->setPermissions(array('show'));
+		$this->annotateChangelogFields($fields);
+		$fields->addFieldsToTab('Root.Changelog', $this->getChangelogFields());
 	}
 
 }

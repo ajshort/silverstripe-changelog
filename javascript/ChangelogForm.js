@@ -13,22 +13,26 @@
 	/**
 	 * Creates a changelog table row.
 	 */
-	var createChangelogRow = function(table, field, original, changed) {
+	var createChangelogRow = function(table, type, field, title, original, changed) {
+		$('#FieldChangelogs .triggerOpened, #FieldChangelogs .contentMore').show();
+		$('#FieldChangelogs .triggerClosed').hide();
+		table.find('tr.notfound').remove();
+
 		var row = $('<tr>').appendTo(table.find('tbody'));
 
 		$('<input>', {
 			type:  'hidden',
 			val:   field,
-			name:  'FieldChangelogs[new][FieldName][]'
+			name:  'FieldChangelogs' + type + '[FieldName][]'
 		}).appendTo(row);
 
 		var summaryInput = $('<input>', {
 			type:  'text',
 			class: 'text',
-			name:  'FieldChangelogs[new][EditSummary][]'
+			name:  'FieldChangelogs' + type + '[EditSummary][]'
 		});
 
-		$('<td>', { text: field }).appendTo(row);
+		$('<td>', { text: title }).appendTo(row);
 		$('<td>', { class: 'original', text: summarise(original) }).appendTo(row);
 		$('<td>', { class: 'changed', text: summarise(changed) }).appendTo(row);
 		$('<td>', { html: summaryInput }).appendTo(row);
@@ -37,7 +41,7 @@
 	/**
 	 * Automatically creates changelog table entries for changed fields.
 	 */
-	$(':input.changelog').live('change', function() {
+	$('.changelog:input').live('change', function() {
 		var input = $(this);
 		var form  = input.parents('form');
 		var field = input.attr('name');
@@ -53,9 +57,31 @@
 				.find('td.changed')
 				.text(summarise(input.val()))
 		} else {
-			table.find('tr.notfound').remove();
 			createChangelogRow(
-				table, input.attr('name'), input[0].defaultValue, input.val()
+				table, '[new]', field, field, input[0].defaultValue, input.val()
+			);
+		}
+	});
+
+	/**
+	 * Creates changelog table entries for changed fields on has_many table
+	 * fields.
+	 */
+	$('.relation-changelog :input').live('change', function() {
+		var input = $(this);
+		var name  = input.attr('name');
+		var form  = input.parents('form');
+		var table = form.find('.TableField[id$=FieldChangelogs]');
+		var match = name.match(/([a-zA-Z0-9_]+)\[([0-9]+)\]\[([a-zA-Z0-9_]+)\]/);
+
+		if (match && (rel = match[1]) && (id = match[2]) && (field = match[3])) {
+			createChangelogRow(
+				table,
+				'[' + rel + '][' + id + ']',
+				field,
+				rel + ' #' + id + ' ' + field,
+				input[0].defaultValue,
+				input.val()
 			);
 		}
 	});

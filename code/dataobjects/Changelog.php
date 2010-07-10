@@ -20,7 +20,12 @@ class Changelog extends DataObject {
 		'Version'      => true
 	);
 
+	public static $has_one = array(
+		'Parent' => 'Changelog'
+	);
+
 	public static $has_many = array(
+		'Children'        => 'Changelog',
 		'FieldChangelogs' => 'FieldChangelog'
 	);
 
@@ -53,9 +58,9 @@ class Changelog extends DataObject {
 	}
 
 	/**
-	 * @return FieldSet
+	 * @return DataDifferencer
 	 */
-	public function getCMSFields() {
+	public function diffWithPrevious() {
 		if ($this->Version > 1) {
 			$from = Versioned::get_version(
 				$this->SubjectClass, $this->SubjectID, $this->Version - 1
@@ -67,21 +72,62 @@ class Changelog extends DataObject {
 		$diff = new DataDifferencer($from, $this->getSubject());
 		$diff->ignoreFields('LastEdited', 'WasPublished');
 
-		return new FieldSet(new TabSet('Root', new Tab('Main',
-			new HeaderField('ChangelogHeader', 'Changelog'),
-			new NumericField('Version', 'Version'),
-			new DateField('Created', 'Created'),
-			new TextField('EditSummary', 'Edit summary'),
-			new CheckboxField('WasPublished', 'Was published?'),
-			new HeaderField('FieldChangelogHeader', 'Field Change Log'),
-			new TableListField(
-				'FieldChangelogs', 'FieldChangelog', null,
-				'"ChangelogID" = ' . $this->ID
+		return $diff;
+	}
+
+	/**
+	 * @return FieldSet
+	 */
+	public function getCMSFields() {
+		$subject   = $this->getSubject();
+		$diff      = $this->diffWithPrevious();
+		$relations = $subject->getChangelogRelations();
+
+		$fields = new FieldSet(new TabSet('Root',
+			new Tab('Main',
+				new NumericField('Version', 'Version'),
+				new DateField('Created', 'Created'),
+				new TextField('EditSummary', 'Edit summary'),
+				new CheckboxField('WasPublished', 'Was published?')
 			),
-			new ToggleCompositeField('ViewDiffHeader', 'View Differences', array(
-				new LiteralField('Diff', $diff->renderWith('ChangelogDiff'))
-			))
-		)));
+			new Tab('Detail',
+				new HeaderField('FieldChangelogHeader', 'Field Change Log'),
+				new TableListField(
+					'FieldChangelogs', 'FieldChangelog', null,
+					'"ChangelogID" = ' . $this->ID
+				),
+				new ToggleCompositeField('ViewDiff', 'View Differences', array(
+					new LiteralField('Diff', $diff->renderWith('ChangelogDiff'))
+				))
+			)
+		));
+
+		// also add a section for each relationship that is also logged
+		foreach ($this->getSubject()->getChangelogRelations() as $relation) {
+			$children = DataObject::get(
+				'Changelog', '"ParentID" = ' . $this->ID
+			);
+
+			if ($children) foreach ($children as $changed) {
+				$diff   = $changed->diffWithPrevious();
+				$name   = $relation . $changed->ID;
+
+				$fields->addFieldsToTab("Root.$relation", array(
+					new HeaderField("{$name}Title", $changed->getSubject()->Title),
+					new TableListField(
+						"{$name}FieldChangelogs", 'FieldChangelog', null,
+						'"ChangelogID" = ' . $changed->ID
+					),
+					new ToggleCompositeField("{$name}ViewDiff", 'View Differences',
+						array(new LiteralField(
+							"{$name}Diff", $diff->renderWith('ChangelogDiff')
+						))
+					)
+				));
+			}
+		}
+
+		return $fields;
 	}
 
 	public function getRequirementsForPopup() {

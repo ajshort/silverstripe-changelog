@@ -7,6 +7,14 @@
 class ChangelogExtension extends DataObjectDecorator {
 
 	/**
+	 * Contains all changelogs that have been written, and are not root
+	 * changelogs but also have no parent. This is used for later processing.
+	 *
+	 * @var Changelog[]
+	 */
+	protected static $orphans = array();
+
+	/**
 	 * @var Changelog
 	 */
 	protected $current, $next;
@@ -15,6 +23,14 @@ class ChangelogExtension extends DataObjectDecorator {
 	 * @var array
 	 */
 	protected $messages = array();
+
+	/**
+	 * TRUE if this changelog is a root changelog (i.e. all changelogs written
+	 * should fall under this changelog).
+	 *
+	 * @var bool
+	 */
+	protected $isRoot = false;
 
 	/**
 	 * Returns the {@link Changelog} object associated with the current version.
@@ -93,7 +109,7 @@ class ChangelogExtension extends DataObjectDecorator {
 			)
 		);
 		$fieldLogs->setCustomSourceItems(new DataObjectSet());
-		$fieldLogs->setPermissions(array('show'));
+		$fieldLogs->setPermissions(array('show', 'edit'));
 		$fieldLogs->showAddRow = false;
 
 		$pastLogs = new ComplexTableField(
@@ -127,9 +143,41 @@ class ChangelogExtension extends DataObjectDecorator {
 			array('ClassName', 'LastEdited')
 		);
 
-		foreach ($names as $name) if ($f = $fields->dataFieldByName($name)) {
-			$f->addExtraClass('changelog');
+		// annotate simple database fields - they can all be tracked
+		foreach ($names as $name) {
+			if ($field = $fields->dataFieldByName($name)) {
+				$field->addExtraClass('changelog');
+			}
 		}
+
+		// also annotate tablefields that correspond to a has_many relationship
+		// which also has this extension applied
+		foreach ($this->getChangelogRelations() as $relation) {
+			$field = $fields->dataFieldByName($relation);
+
+			if ($field instanceof TableField) {
+				$field->addExtraClass('relation-changelog');
+			}
+		}
+	}
+
+	/**
+	 * Returns all relations that have changelog support. At the moment this
+	 * is limited to has_many.
+	 *
+	 * @return array
+	 */
+	public function getChangelogRelations() {
+		$relations = array();
+
+		foreach ($this->owner->has_many() as $relation => $class) {
+			if($relation == 'Versions') continue;
+			if(!Object::has_extension($class, 'ChangelogExtension')) continue;
+
+			$relations[] = $relation;
+		}
+
+		return $relations;
 	}
 
 	/**
@@ -144,63 +192,136 @@ class ChangelogExtension extends DataObjectDecorator {
 	 *
 	 * @param array $raw
 	 */
-	public function saveFieldChangelogs($raw) {
-		$raw        = ArrayLib::invert($raw['new']);
-		$messages   = array();
+	public function saveFieldChangelogs($raw, $form) {
+		$relations = $this->getChangelogRelations();
+		$messages  = array();
 
-		if($raw) foreach ($raw as $data) if ($data['FieldName']) {
-			$messages[$data['FieldName']] = $data['EditSummary'];
+		// assume that this method being called means this object is being
+		// directly saved form a form, so it's the root changelog
+		$this->isRoot = true;
+
+		if (isset($raw['new'])) {
+			foreach (ArrayLib::invert($raw['new']) as $item) {
+				$field   = $item['FieldName'];
+				$message = $item['EditSummary'];
+
+				$this->messages['root'][$field] = $message;
+			}
 		}
 
-		$this->messages = $messages;
+		foreach ($this->getChangelogRelations() as $relation) {
+			$this->messages[$relation] = array();
+
+			if (isset($raw[$relation])) foreach ($raw[$relation] as $id => $raw) {
+				$this->messages[$relation][$id] = array();
+
+				foreach (ArrayLib::invert($raw) as $item) {
+					$field   = $item['FieldName'];
+					$message = $item['EditSummary'];
+
+					$this->messages[$relation][$id][$field] = $message;
+				}
+			}
+		}
 	}
 
 	/**
 	 * Writes a new changelog record if a version has been created.
 	 */
 	public function onAfterWrite() {
-		$changed = $this->owner->isChanged('Version');
-		$exists  = $this->getChangelogForVersion($this->owner->Version);
+		$changed   = $this->owner->isChanged('Version');
+		$exists    = $this->getChangelogForVersion($this->owner->Version);
+		$createNew = $this->owner->Version && $changed && !$exists;
+		$messages  = $this->messages;
 
 		// ensure the owner has the versioned extension
 		if (!Object::has_extension($this->owner->class, 'Versioned')) {
 			throw new Exception('The Changelog extension requires Versioned.');
 		}
 
-		// make sure not to create a changelog entry for version migrations
-		if (!$this->owner->Version || !$changed || $exists) {
-			return;
+		if ($createNew) {
+			// create the new main changelog entry
+			$log = $this->getNextChangelog();
+			$log->SubjectID = $this->owner->ID;
+			$log->Version   = $this->owner->Version;
+			$log->write();
+		} else {
+			$log = $this->getChangelog();
 		}
 
-		// create the new main changelog entry
-		$log = $this->getNextChangelog();
-		$log->SubjectID = $this->owner->ID;
-		$log->Version   = $this->owner->Version;
-		$log->write();
+		if ($this->isRoot) {
+			// if we are the root changelog object, write all the orphans parent
+			// ids to point to this
+			foreach (self::$orphans as $key => $orphan) {
+				$orphan->getChangelog()->ParentID = $log->ID;
+				$orphan->getChangelog()->write();
+
+				unset(self::$orphans[$key]);
+			}
+
+			// also loop through each child relation and write any child
+			// changelog messages
+			foreach ($this->getChangelogRelations() as $relation) {
+				$class = $this->owner->has_many($relation);
+
+				if (isset($messages[$relation])) {
+					foreach ($messages[$relation] as $id => $messages) {
+						if (!$child = DataObject::get_by_id($class, $id)) {
+							continue;
+						}
+
+						foreach ($messages as $field => $message) {
+							$fieldLog = DataObject::get_one('FieldChangelog', sprintf(
+								'"FieldName" = \'%s\' AND "ChangelogID" = %d',
+								Convert::raw2sql($field),
+								$child->getChangelog()->ID
+							));
+
+							if ($fieldLog) {
+								$fieldLog->EditSummary = $message;
+								$fieldLog->write();
+							}
+						}
+					}
+				}
+			}
+		} elseif ($createNew) {
+			// if this is not the root record, add it to the orphans and assume
+			// the root record will populate it later
+			self::$orphans[] = $this->owner;
+		}
 
 		// and then create a field changelog entry for each field change, unless
 		// we have a new record
-		if (!$this->owner->isChanged('ID')) {
+		if ($createNew && !$this->owner->isChanged('ID')) {
 			$changes = $this->owner->getChangedFields(true, 2);
+			$db      = array_keys($this->owner->db());
 
 			foreach ($changes as $field => $change) {
-				if ($field == 'Version') continue;
+				if (!in_array($field, $db) || $field == 'Version') continue;
 
 				$fieldLog = new FieldChangelog();
 				$fieldLog->FieldName   = $field;
 				$fieldLog->Original    = $change['before'];
 				$fieldLog->Changed     = $change['after'];
 
-				if (isset($this->messages[$field])) {
-					$fieldLog->EditSummary = $this->messages[$field];
+				if ($this->isRoot && isset($messages['root'][$field])) {
+					$fieldLog->EditSummary = $messages['root'][$field];
 				}
 
 				$log->FieldChangelogs()->add($fieldLog);
 			}
 		}
 
-		$this->current = $log;
-		$this->next    = null;
+		// since all the parent ids have been set, we are no longer the
+		// root record
+		$this->isRoot   = false;
+		$this->messages = array();
+
+		if ($createNew) {
+			$this->current = $log;
+			$this->next    = null;
+		}
 	}
 
 	/**

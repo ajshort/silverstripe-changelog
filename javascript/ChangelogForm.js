@@ -18,7 +18,7 @@
 		$('#FieldChangelogs .triggerClosed').hide();
 		table.find('tr.notfound').remove();
 
-		var row = $('<tr>').appendTo(table.find('tbody'));
+		var row = $('<tr>').addClass(field).appendTo(table.find('tbody'));
 
 		$('<input>', {
 			type:  'hidden',
@@ -49,13 +49,10 @@
 
 		// check if we need to create a new row in the changelog table for
 		// this change
-		var existing = $('input:hidden[value=' + field + ']', table);
+		var existing = table.find('tr.' + field + '');
 
 		if (existing.length) {
-			existing
-				.parents('tr')
-				.find('td.changed')
-				.text(summarise(input.val()))
+			existing.find('td.changed').text(summarise(input.val()));
 		} else {
 			createChangelogRow(
 				table, '[new]', field, field, input[0].defaultValue, input.val()

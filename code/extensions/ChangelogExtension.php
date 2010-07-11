@@ -93,9 +93,9 @@ class ChangelogExtension extends DataObjectDecorator {
 	/**
 	 * Returns an array of all form fields to add changelog support to a form.
 	 *
-	 * @return CompositeField
+	 * @return array
 	 */
-	public function getChangelogFields() {
+	public function getChangelogFormFields() {
 		Requirements::javascript(THIRDPARTY_DIR . '/jquery/jquery.js');
 		Requirements::javascript(CHANGELOG_DIR  . '/javascript/ChangelogForm.js');
 
@@ -329,7 +329,7 @@ class ChangelogExtension extends DataObjectDecorator {
 	 */
 	public function updateCMSFields($fields) {
 		$this->annotateChangelogFields($fields);
-		$fields->addFieldsToTab('Root.Changelog', $this->getChangelogFields());
+		$fields->addFieldsToTab('Root.Changelog', $this->getChangelogFormFields());
 	}
 
 }

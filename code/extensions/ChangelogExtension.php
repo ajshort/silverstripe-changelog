@@ -33,6 +33,42 @@ class ChangelogExtension extends DataObjectDecorator {
 	protected $isRoot = false;
 
 	/**
+	 * @var array
+	 */
+	protected $customFields = array();
+
+	/**
+	 * @param array $customFields An optional array of fields to enable as
+	 *        changeloggable fields.
+	 */
+	public function __construct($customFields = array()) {
+		$this->customFields = $customFields;
+		parent::__construct();
+	}
+
+	/**
+	 * Used to register custom changelog fields the first time the owner is
+	 * set.
+	 */
+	public function setOwner($owner, $baseClass = null) {
+		$customFields   = $this->customFields;
+		$shouldRegister = (!$this->ownerBaseClass && $baseClass);
+
+		parent::setOwner($owner, $baseClass);
+
+		if ($customFields && $shouldRegister) {
+			$this->getChangelogConfig()->registerFields($customFields);
+		}
+	}
+
+	/**
+	 * @return ChangelogConfig
+	 */
+	public function getChangelogConfig() {
+		return ChangelogConfig::get_for_class($this->ownerBaseClass);
+	}
+
+	/**
 	 * Returns the {@link Changelog} object associated with the current version.
 	 * If one does not exist a new object is returned but not written.
 	 *
@@ -135,49 +171,25 @@ class ChangelogExtension extends DataObjectDecorator {
 	/**
 	 * Annotates all fields in a FieldSet that are changeloggable.
 	 *
-	 * @param FieldSet $fields
+	 * @param FieldSet $fieldset
 	 */
-	public function annotateChangelogFields($fields) {
-		$names = array_merge(
-			array_keys($this->owner->inheritedDatabaseFields()),
-			array('ClassName', 'LastEdited')
-		);
+	public function annotateChangelogFields($fieldset) {
+		$fields    = $this->getChangelogConfig()->getFields();
+		$relations = $this->getChangelogConfig()->getRelations();
 
-		// annotate simple database fields - they can all be tracked
-		foreach ($names as $name) {
-			if ($field = $fields->dataFieldByName($name)) {
+		foreach ($fields as $name) {
+			if ($field = $fieldset->dataFieldByName($name)) {
 				$field->addExtraClass('changelog');
 			}
 		}
 
-		// also annotate tablefields that correspond to a has_many relationship
-		// which also has this extension applied
-		foreach ($this->getChangelogRelations() as $relation) {
-			$field = $fields->dataFieldByName($relation);
+		foreach ($relations as $relation => $class) {
+			$field = $fieldset->dataFieldByName($relation);
 
 			if ($field instanceof TableField) {
 				$field->addExtraClass('relation-changelog');
 			}
 		}
-	}
-
-	/**
-	 * Returns all relations that have changelog support. At the moment this
-	 * is limited to has_many.
-	 *
-	 * @return array
-	 */
-	public function getChangelogRelations() {
-		$relations = array();
-
-		foreach ($this->owner->has_many() as $relation => $class) {
-			if($relation == 'Versions') continue;
-			if(!Object::has_extension($class, 'ChangelogExtension')) continue;
-
-			$relations[] = $relation;
-		}
-
-		return $relations;
 	}
 
 	/**
@@ -193,7 +205,7 @@ class ChangelogExtension extends DataObjectDecorator {
 	 * @param array $raw
 	 */
 	public function saveFieldChangelogs($raw, $form) {
-		$relations = $this->getChangelogRelations();
+		$relations = $this->getChangelogConfig()->getRelations();
 		$messages  = array();
 
 		// assume that this method being called means this object is being
@@ -209,7 +221,7 @@ class ChangelogExtension extends DataObjectDecorator {
 			}
 		}
 
-		foreach ($this->getChangelogRelations() as $relation) {
+		foreach ($relations as $relation => $class) {
 			$this->messages[$relation] = array();
 
 			if (isset($raw[$relation])) foreach ($raw[$relation] as $id => $raw) {
@@ -261,9 +273,7 @@ class ChangelogExtension extends DataObjectDecorator {
 
 			// also loop through each child relation and write any child
 			// changelog messages
-			foreach ($this->getChangelogRelations() as $relation) {
-				$class = $this->owner->has_many($relation);
-
+			foreach ($this->getChangelogConfig()->getRelations() as $relation => $class) {
 				if (isset($messages[$relation])) {
 					foreach ($messages[$relation] as $id => $messages) {
 						if (!$child = DataObject::get_by_id($class, $id)) {
@@ -294,11 +304,11 @@ class ChangelogExtension extends DataObjectDecorator {
 		// and then create a field changelog entry for each field change, unless
 		// we have a new record
 		if ($createNew && !$this->owner->isChanged('ID')) {
-			$changes = $this->owner->getChangedFields(true, 2);
-			$db      = array_keys($this->owner->db());
+			$changes  = $this->owner->getChangedFields(true, 2);
+			$loggable = $this->getChangelogConfig()->getFields()
 
 			foreach ($changes as $field => $change) {
-				if (!in_array($field, $db) || $field == 'Version') continue;
+				if (!in_array($field, $loggable)) continue;
 
 				$fieldLog = new FieldChangelog();
 				$fieldLog->FieldName   = $field;

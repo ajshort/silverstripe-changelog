@@ -81,7 +81,7 @@ class Changelog extends DataObject {
 	public function getCMSFields() {
 		$subject   = $this->getSubject();
 		$diff      = $this->diffWithPrevious();
-		$relations = $subject->getChangelogRelations();
+		$relations = $subject->getChangelogConfig()->getRelations();
 
 		$fields = new FieldSet(new TabSet('Root',
 			new Tab('Main',
@@ -103,7 +103,7 @@ class Changelog extends DataObject {
 		));
 
 		// also add a section for each relationship that is also logged
-		foreach ($this->getSubject()->getChangelogRelations() as $relation) {
+		foreach ($relations as $relation) {
 			$children = DataObject::get(
 				'Changelog', '"ParentID" = ' . $this->ID
 			);

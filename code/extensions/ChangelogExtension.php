@@ -305,7 +305,7 @@ class ChangelogExtension extends DataObjectDecorator {
 		// we have a new record
 		if ($createNew && !$this->owner->isChanged('ID')) {
 			$changes  = $this->owner->getChangedFields(true, 2);
-			$loggable = $this->getChangelogConfig()->getFields()
+			$loggable = $this->getChangelogConfig()->getFields();
 
 			foreach ($changes as $field => $change) {
 				if (!in_array($field, $loggable)) continue;

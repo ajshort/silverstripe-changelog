@@ -3,7 +3,7 @@
 	 * Summarises a string, adding "..." if it is longer than 30 characters.
 	 */
 	var summarise = function(string) {
-		if (string.length > 30) {
+		if (string && string.length > 30) {
 			return string.substr(0, 27) + '...';
 		} else {
 			return string;

@@ -27,7 +27,7 @@ class ChangelogConfig {
 	 * @param  string $class
 	 * @return ChangelogConfig
 	 */
-	public static function get_for_class($class) {
+	public static function get($class) {
 		if (!array_key_exists($class, self::$configs)) {
 			self::$configs[$class] = new ChangelogConfig($class);
 		}
@@ -39,6 +39,14 @@ class ChangelogConfig {
 	 * @param string $subjectClass
 	 */
 	public function __construct($subjectClass) {
+		$fields  = array();
+		$summary = singleton($subjectClass)->summaryFields();
+
+		if ($summary) foreach ($summary as $field => $title) {
+			$fields[$field] = array('title' => $title);
+		}
+
+		$this->fields       = $fields;
 		$this->subjectClass = $subjectClass;
 	}
 
@@ -50,44 +58,48 @@ class ChangelogConfig {
 	}
 
 	/**
-	 * Returns field names that should have change logging enabled.
+	 * Returns all fields that should be change logged, as well as their
+	 * options.
 	 *
-	 * @return array
+	 * @return array A map of field name to an array of options.
 	 */
 	public function getFields() {
-		$ancestry = ClassInfo::ancestry($this->subjectClass);
-		$fields   = (array) singleton($this->subjectClass)->summaryFields();
+		$fields   = $this->fields;
+		$ancestry = array_reverse(ClassInfo::ancestry($this->subjectClass));
+
+		array_shift($ancestry);
 
 		foreach ($ancestry as $ancestor) {
-			$fields += self::get_for_class($ancestor)->getCustomFields();
+			if (!is_subclass_of($ancestor, 'DataObject')) break;
+
+			$fields = array_merge_recursive(
+				self::get($ancestor)->getFields(), $fields
+			);
 		}
 
-		return array_unique($fields);
+		return $fields;
 	}
 
 	/**
-	 * Returns field names that have been explicity set on only this class.
+	 * Registers a field to be change logged, along with additional options.
 	 *
-	 * @return array
+	 * @param string $name
+	 * @param array  $options
 	 */
-	public function getCustomFields() {
-		return $this->fields;
+	public function registerField($name, array $options = array()) {
+		$this->fields = array_merge_recursive($this->fields, array(
+			$name => $options
+		));
 	}
 
 	/**
-	 * Registers one or more fields to be change logged.
+	 * Registers multiple fields to be changelogged, all with the same settings.
 	 *
-	 * @param string,... $name One or more field names to enable
+	 * @param array $names
+	 * @param array $options
 	 */
-	public function registerFields() {
-		$args = func_get_args();
-		if (is_array($args[0])) $args = $args[0];
-
-		foreach ($args as $field) {
-			if (!array_key_exists($field, $this->fields)) {
-				$this->fields[$field] = $field;
-			}
-		}
+	public function registerFields(array $names, array $options = array()) {
+		foreach ($names as $name) $this->registerField($name, $options);
 	}
 
 	/**

@@ -36,7 +36,7 @@ class ChangelogExtension extends DataObjectDecorator {
 	 * @return ChangelogConfig
 	 */
 	public function getChangelogConfig() {
-		return ChangelogConfig::get_for_class($this->owner->class);
+		return ChangelogConfig::get($this->owner->class);
 	}
 
 	/**
@@ -213,7 +213,7 @@ class ChangelogExtension extends DataObjectDecorator {
 			$loggable = $this->getChangelogConfig()->getFields();
 
 			foreach ($changes as $field => $change) {
-				if (!in_array($field, $loggable)) continue;
+				if (!array_key_exists($field, $loggable)) continue;
 
 				$fieldLog = new FieldChangelog();
 				$fieldLog->FieldName   = $field;

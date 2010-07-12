@@ -27,7 +27,7 @@ class ChangelogTransformation extends FormTransformation {
 	 */
 	public function __construct($record, $config = null) {
 		if (!$config) {
-			$config = ChangelogConfig::get_for_class($record->class);
+			$config = ChangelogConfig::get($record->class);
 		}
 
 		$this->record    = $record;
@@ -63,7 +63,7 @@ class ChangelogTransformation extends FormTransformation {
 
 	public function transformFormField($field) {
 		$isComposite = $field->isComposite();
-		$isLoggable  = in_array($field->Name(), $this->fields);
+		$isLoggable  = array_key_exists($field->Name(), $this->fields);
 
 		if (!$isComposite && $isLoggable) {
 			$field->addExtraClass('changelog');
@@ -97,13 +97,13 @@ class ChangelogTransformation extends FormTransformation {
 		}
 
 		$source    = $table->sourceClass();
-		$config    = ChangelogConfig::get_for_class($source);
+		$config    = ChangelogConfig::get($source);
 		$fields    = $table->FieldSetForRow();
 		$loggable  = $config->getFields();
 		$newFields = array();
 
 		foreach ($fields->dataFields() as $name => $field) {
-			if (in_array($name, $loggable)) {
+			if (array_key_exists($name, $loggable)) {
 				$field->addExtraClass('changelog');
 			}
 

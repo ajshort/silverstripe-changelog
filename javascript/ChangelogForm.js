@@ -69,19 +69,27 @@
 			// dont add changelog records for new objects
 			if (!match) return;
 
+			if (input.metadata() && input.metadata().title) {
+				titlePart = input.metadata().title;
+			} else {
+				titlePart = match[3];
+			}
+
 			var type  = '[' + match[1] + '][' + match[2] + ']';
 			var name  = match[3];
 			var title = match[1] + ' #' + match[2] + ' ' + match[3];
 		} else {
 			var type  = '[new]';
 			var name  = field;
-			var title = field;
+
+			if (input.metadata() && input.metadata().title) {
+				title = input.metadata().title;
+			} else {
+				title = field;
+			}
 		}
 
 		// check for an explitly defined title
-		if (input.metadata() && input.metadata().title) {
-			title = input.metadata().title;
-		}
 
 		createChangelogRow(table, type, name, class, title, original, input.val());
 

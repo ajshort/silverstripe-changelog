@@ -72,9 +72,13 @@ class ChangelogConfig {
 		foreach ($ancestry as $ancestor) {
 			if (!is_subclass_of($ancestor, 'DataObject')) break;
 
-			$fields = array_merge_recursive(
-				self::get($ancestor)->getFields(), $fields
-			);
+			foreach (self::get($ancestor)->getFields() as $name => $options) {
+				if (isset($fields[$name])) {
+					$fields[$name] = array_merge($fields[$name], $options);
+				} else {
+					$fields[$name] = $options;
+				}
+			}
 		}
 
 		return $fields;
@@ -87,9 +91,11 @@ class ChangelogConfig {
 	 * @param array  $options
 	 */
 	public function registerField($name, array $options = array()) {
-		$this->fields = array_merge_recursive($this->fields, array(
-			$name => $options
-		));
+		if (isset($this->fields[$name])) {
+			$this->fields[$name] = array_merge($this->fields[$name], $options);
+		} else {
+			$this->fields[$name] = $options;
+		}
 	}
 
 	/**

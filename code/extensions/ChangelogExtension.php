@@ -60,7 +60,7 @@ class ChangelogExtension extends DataObjectDecorator {
 			$this->current = new Changelog();
 			$this->current->SubjectClass = $this->owner->class;
 			$this->current->SubjectID    = $this->owner->ID;
-			$this->current->Version      = $this->owner->Version;
+			$this->current->VersionNum   = $this->owner->Version;
 		}
 
 		return $this->current;
@@ -74,7 +74,7 @@ class ChangelogExtension extends DataObjectDecorator {
 	 */
 	public function getChangelogForVersion($version) {
 		return DataObject::get_one('Changelog', sprintf(
-			'"SubjectClass" = \'%s\' AND "SubjectID" = %d AND "Version" = %d',
+			'"SubjectClass" = \'%s\' AND "SubjectID" = %d AND "VersionNum" = %d',
 			$this->owner->class,
 			$this->owner->ID,
 			$version
@@ -159,8 +159,8 @@ class ChangelogExtension extends DataObjectDecorator {
 		if ($createNew) {
 			// create the new main changelog entry
 			$log = $this->getNextChangelog();
-			$log->SubjectID = $this->owner->ID;
-			$log->Version   = $this->owner->Version;
+			$log->SubjectID  = $this->owner->ID;
+			$log->VersionNum = $this->owner->Version;
 			$log->write();
 		} else {
 			$log = $this->getChangelog();

@@ -10,14 +10,14 @@ class Changelog extends DataObject {
 	public static $db = array(
 		'SubjectClass' => 'Varchar(80)',
 		'SubjectID'    => 'Int',
-		'Version'      => 'Int',
+		'VersionNum'   => 'Int',
 		'EditSummary'  => 'Varchar(255)'
 	);
 
 	public static $indexes = array(
 		'SubjectClass' => true,
 		'SubjectID'    => true,
-		'Version'      => true
+		'VersionNum'   => true
 	);
 
 	public static $has_one = array(
@@ -32,9 +32,9 @@ class Changelog extends DataObject {
 	public static $default_sort = 'Created DESC';
 
 	public static $summary_fields = array(
-		'Version',
-		'Created',
-		'EditSummary'
+		'VersionNum'  => 'Version',
+		'Created'     => 'Created',
+		'EditSummary' => 'Edit Summary'
 	);
 
 	/**
@@ -44,7 +44,7 @@ class Changelog extends DataObject {
 	 */
 	public function getSubject() {
 		return Versioned::get_version(
-			$this->SubjectClass, $this->SubjectID, $this->Version
+			$this->SubjectClass, $this->SubjectID, $this->VersionNum
 		);
 	}
 
@@ -61,9 +61,9 @@ class Changelog extends DataObject {
 	 * @return DataDifferencer
 	 */
 	public function diffWithPrevious() {
-		if ($this->Version > 1) {
+		if ($this->VersionNum > 1) {
 			$from = Versioned::get_version(
-				$this->SubjectClass, $this->SubjectID, $this->Version - 1
+				$this->SubjectClass, $this->SubjectID, $this->VersionNum - 1
 			);
 		} else {
 			$from = null;
@@ -85,7 +85,7 @@ class Changelog extends DataObject {
 
 		$fields = new FieldSet(new TabSet('Root',
 			new Tab('Main',
-				new NumericField('Version', 'Version'),
+				new NumericField('VersionNum', 'Version'),
 				new DateField('Created', 'Created'),
 				new TextField('EditSummary', 'Edit summary'),
 				new CheckboxField('WasPublished', 'Was published?')

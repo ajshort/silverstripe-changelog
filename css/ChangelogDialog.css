@@ -20,6 +20,14 @@
 		margin-bottom: 15px;
 	}
 
+	#ChangelogDialog #RequiredMessage {
+		padding: 5px;
+		font-weight: bold;
+		border: 3px solid #F7F8B4;
+		background: #FFFFEA;
+		color: #3D3D2C;
+	}
+
 	#ChangelogDialog label {
 		font-size: 12px;
 		margin-bottom: 2px;

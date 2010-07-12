@@ -131,7 +131,6 @@
 		dialog.dialog({
 			draggable: false,
 			buttons: buttons,
-			height: 380,
 			modal: true,
 			overlay: { backgroundColor: '#000', opacity: .5 },
 			resizable: false,

@@ -109,7 +109,7 @@ class ChangelogExtension extends DataObjectDecorator {
 	 *
 	 * @param array $raw
 	 */
-	public function saveFieldChangelogs($raw, $form) {
+	public function saveFieldChangelogs($raw) {
 		$relations = $this->getChangelogConfig()->getRelations();
 		$messages  = array();
 

@@ -56,9 +56,7 @@ class ChangelogConfig {
 	 */
 	public function getFields() {
 		$ancestry = ClassInfo::ancestry($this->subjectClass);
-		$fields   = (array) $this->getCustomFields();
-
-		array_shift($ancestry);
+		$fields   = (array) singleton($this->subjectClass)->summaryFields();
 
 		foreach ($ancestry as $ancestor) {
 			$fields += self::get_for_class($ancestor)->getCustomFields();
@@ -73,14 +71,7 @@ class ChangelogConfig {
 	 * @return array
 	 */
 	public function getCustomFields() {
-		$result = $this->fields;
-
-		// include summary fields on the root class for some sensible defaults
-		if (get_parent_class($this->subjectClass) == 'DataObject') {
-			$result += singleton($this->subjectClass)->summaryFields();
-		}
-
-		return $result;
+		return $this->fields;
 	}
 
 	/**

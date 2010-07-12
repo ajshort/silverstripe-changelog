@@ -91,7 +91,7 @@ class Changelog extends DataObject {
 				new CheckboxField('WasPublished', 'Was published?')
 			),
 			new Tab('Detail',
-				new HeaderField('FieldChangelogHeader', 'Field Change Log'),
+				new HeaderField('FieldChangelogHeader', 'Field Changelog'),
 				new TableListField(
 					'FieldChangelogs', 'FieldChangelog', null,
 					'"ChangelogID" = ' . $this->ID

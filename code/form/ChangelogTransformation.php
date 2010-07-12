@@ -39,6 +39,20 @@ class ChangelogTransformation extends FormTransformation {
 	}
 
 	/**
+	 * A working  partialimplementation of {@link FormTransformation::transform()},
+	 * as the default 2.4 one is broken.
+	 */
+	public function transform(FormField $field) {
+		if ($field instanceof TableField) {
+			return $this->transformTableField($field);
+		} elseif ($field instanceof CompositeField) {
+			return $this->transformCompositeField($field);
+		} else {
+			return $this->transformFormField($field);
+		}
+	}
+
+	/**
 	 * Transforms a FieldSet by adding changelog form fields and annotating
 	 * fields that should be logged.
 	 *

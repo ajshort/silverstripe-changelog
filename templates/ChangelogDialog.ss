@@ -15,6 +15,9 @@
 	<p>Please enter a short edit summary message describing why you have
 	made this field change:</p>
 
+	<p id="RequiredMessage" class="message">Note: you must enter a message to
+	save this record.</p>
+
 	<div class="field">
 		<label class="left">Edit summary</label>
 		<div class="middleColumn">

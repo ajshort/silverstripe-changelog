@@ -247,4 +247,11 @@ class ChangelogExtension extends DataObjectDecorator {
 		$transform->transformFieldSet($fields);
 	}
 
+	/**
+	 * @return ChangelogValidator
+	 */
+	public function getCMSValidator() {
+		return new ChangelogValidator();
+	}
+
 }

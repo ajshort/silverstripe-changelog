@@ -82,34 +82,47 @@
 
 		// if the config options is set, prompt for a changelog message with
 		// a dialog
-		if (!input.hasClass('changelog-prompt')) return;
+		var isPrompt     = input.hasClass('changelog-prompt');
+		var isRequired   = input.hasClass('changelog-required');
+
+		if (!isPrompt && !isRequired) return;
 
 		var summaryInput = dialog.find('input[name=EditSummary]');
+		var requiredMsg  = dialog.find('#RequiredMessage');
+		var buttons      = {}
+
+		buttons['Save'] = function() {
+			var summary = summaryInput.val();
+			var input   = table.find('tr.' + class + ' input.text');
+
+			input.val(summary);
+			summaryInput.val('');
+
+			dialog.dialog('close');
+		}
+
+		if (isRequired) {
+			requiredMsg.show();
+		} else {
+			buttons['Cancel'] = function() {
+				summaryInput.val('');
+				dialog.dialog('close');
+			}
+
+			requiredMsg.hide();
+		}
 
 		dialog.find('.original').text(original);
 		dialog.find('.changed').text(input.val());
 
 		dialog.dialog({
 			draggable: false,
-			buttons: {
-				'Save': function() {
-					table
-						.find('tr.' + class + ' input.text')
-						.val(summaryInput.val());
-					summaryInput.val('');
-
-					dialog.dialog('close');
-				},
-				'Cancel': function() {
-					summaryInput.val('');
-					dialog.dialog('close');
-				}
-			},
-			height: 330,
+			buttons: buttons,
+			height: 380,
 			modal: true,
 			overlay: { backgroundColor: '#000', opacity: .5 },
 			resizable: false,
-			width: 480
+			width: 500
 		});
 	});
 })(jQuery);

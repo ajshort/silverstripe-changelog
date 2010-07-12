@@ -71,6 +71,10 @@ class ChangelogTransformation extends FormTransformation {
 				$field->addExtraClass('changelog-prompt');
 			}
 
+			if (in_array('required', $this->fields[$name])) {
+				$field->addExtraClass('changelog-required');
+			}
+
 			$field->addExtraClass('changelog');
 		}
 
@@ -111,6 +115,10 @@ class ChangelogTransformation extends FormTransformation {
 			if (array_key_exists($name, $loggable)) {
 				if (in_array('prompt', $loggable[$name])) {
 					$field->addExtraClass('changelog-prompt');
+				}
+
+				if (in_array('required', $loggable[$name])) {
+					$field->addExtraClass('changelog-required');
 				}
 
 				$field->addExtraClass('changelog');

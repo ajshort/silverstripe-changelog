@@ -78,6 +78,11 @@
 			var title = field;
 		}
 
+		// check for an explitly defined title
+		if (input.metadata() && input.metadata().title) {
+			title = input.metadata().title;
+		}
+
 		createChangelogRow(table, type, name, class, title, original, input.val());
 
 		// if the config options is set, prompt for a changelog message with

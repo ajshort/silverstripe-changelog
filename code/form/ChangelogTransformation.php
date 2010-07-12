@@ -67,15 +67,7 @@ class ChangelogTransformation extends FormTransformation {
 		$isLoggable  = array_key_exists($name, $this->fields);
 
 		if (!$isComposite && $isLoggable) {
-			if (in_array('prompt', $this->fields[$name])) {
-				$field->addExtraClass('changelog-prompt');
-			}
-
-			if (in_array('required', $this->fields[$name])) {
-				$field->addExtraClass('changelog-required');
-			}
-
-			$field->addExtraClass('changelog');
+			$this->annotateField($field, $this->fields[$name]);
 		}
 
 		return $field;
@@ -113,15 +105,7 @@ class ChangelogTransformation extends FormTransformation {
 
 		foreach ($fields->dataFields() as $name => $field) {
 			if (array_key_exists($name, $loggable)) {
-				if (in_array('prompt', $loggable[$name])) {
-					$field->addExtraClass('changelog-prompt');
-				}
-
-				if (in_array('required', $loggable[$name])) {
-					$field->addExtraClass('changelog-required');
-				}
-
-				$field->addExtraClass('changelog');
+				$this->annotateField($field, $loggable[$name]);
 			}
 
 			$newFields[$name] = $field;
@@ -131,6 +115,28 @@ class ChangelogTransformation extends FormTransformation {
 		return $table;
 	}
 
+	protected function annotateField($field, $config) {
+		$field->addExtraClass('changelog');
+
+		if (in_array('prompt', $config)) {
+			$field->addExtraClass('changelog-prompt');
+		}
+
+		if (in_array('required', $config)) {
+			$field->addExtraClass('changelog-required');
+		}
+
+		if (array_key_exists('title', $config)) {
+			$title = $config['title'];
+		} elseif ($field->Title()) {
+			$title = $field->Title();
+		}
+
+		if (isset($title)) $field->addExtraClass(sprintf(
+			'{title:\'%s\'}', Convert::raw2js($title)
+		));
+	}
+
 	/**
 	 * Returns an array of all form fields to add changelog support to a form.
 	 *
@@ -138,6 +144,7 @@ class ChangelogTransformation extends FormTransformation {
 	 */
 	protected function getChangelogFormFields() {
 		Requirements::javascript(THIRDPARTY_DIR . '/jquery/jquery.js');
+		Requirements::javascript(THIRDPARTY_DIR . '/jquery-metadata/jquery.metadata.js');
 		Requirements::javascript(THIRDPARTY_DIR . '/jquery-ui/jquery-ui-1.8rc3.custom.js');
 		Requirements::javascript(CHANGELOG_DIR  . '/javascript/ChangelogForm.js');
 		Requirements::css(THIRDPARTY_DIR . '/jquery-ui-themes/base/jquery.ui.all.css');

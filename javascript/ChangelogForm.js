@@ -43,12 +43,13 @@
 	/**
 	 * Automatically creates changelog table entries for changed fields.
 	 */
-	$('.changelog :input').live('change', function() {
+	$(':input.changelog').live('change', function() {
 		var input    = $(this);
 		var form     = input.parents('form');
 		var field    = input.attr('name');
 		var original = input[0].defaultValue;
 		var table    = form.find('.TableField[id$=FieldChangelogs]');
+		var dialog   = $('#ChangelogDialog');
 
 		// convert the field name to a css class and try to find an existing
 		// changelog entry
@@ -78,5 +79,37 @@
 		}
 
 		createChangelogRow(table, type, name, class, title, original, input.val());
+
+		// if the config options is set, prompt for a changelog message with
+		// a dialog
+		if (!input.hasClass('changelog-prompt')) return;
+
+		var summaryInput = dialog.find('input[name=EditSummary]');
+
+		dialog.find('.original').text(original);
+		dialog.find('.changed').text(input.val());
+
+		dialog.dialog({
+			draggable: false,
+			buttons: {
+				'Save': function() {
+					table
+						.find('tr.' + class + ' input.text')
+						.val(summaryInput.val());
+					summaryInput.val('');
+
+					dialog.dialog('close');
+				},
+				'Cancel': function() {
+					summaryInput.val('');
+					dialog.dialog('close');
+				}
+			},
+			height: 300,
+			modal: true,
+			overlay: { backgroundColor: '#000', opacity: .5 },
+			resizable: false,
+			width: 400
+		});
 	});
 })(jQuery);

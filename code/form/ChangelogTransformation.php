@@ -62,10 +62,15 @@ class ChangelogTransformation extends FormTransformation {
 	}
 
 	public function transformFormField($field) {
+		$name        = $field->Name();
 		$isComposite = $field->isComposite();
-		$isLoggable  = array_key_exists($field->Name(), $this->fields);
+		$isLoggable  = array_key_exists($name, $this->fields);
 
 		if (!$isComposite && $isLoggable) {
+			if (in_array('prompt', $this->fields[$name])) {
+				$field->addExtraClass('changelog-prompt');
+			}
+
 			$field->addExtraClass('changelog');
 		}
 
@@ -104,6 +109,10 @@ class ChangelogTransformation extends FormTransformation {
 
 		foreach ($fields->dataFields() as $name => $field) {
 			if (array_key_exists($name, $loggable)) {
+				if (in_array('prompt', $loggable[$name])) {
+					$field->addExtraClass('changelog-prompt');
+				}
+
 				$field->addExtraClass('changelog');
 			}
 
@@ -154,6 +163,9 @@ class ChangelogTransformation extends FormTransformation {
 			),
 			new ToggleCompositeField(
 				'PastChangelogs', 'Past Changelogs', array($pastLogs)
+			),
+			new LiteralField(
+				'ChangelogDialog', $this->record->renderWith('ChangelogDialog')
 			)
 		);
 	}

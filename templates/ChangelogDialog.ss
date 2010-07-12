@@ -1,6 +1,8 @@
 <% require css(changelog/css/ChangelogDialog.css) %>
 
 <div id="ChangelogDialog" title="Changelog Edit Summary Message">
+	<h2>Field Change</h2>
+
 	<h3>Original Value</h3>
 	<p class="original">
 	</p>

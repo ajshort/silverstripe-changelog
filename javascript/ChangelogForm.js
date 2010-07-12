@@ -105,11 +105,11 @@
 					dialog.dialog('close');
 				}
 			},
-			height: 300,
+			height: 330,
 			modal: true,
 			overlay: { backgroundColor: '#000', opacity: .5 },
 			resizable: false,
-			width: 400
+			width: 480
 		});
 	});
 })(jQuery);

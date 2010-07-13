@@ -11,33 +11,64 @@ class ChangelogValidator extends Validator {
 	 * @return bool
 	 */
 	public function php($data) {
-		$record   = $this->form->getRecord();
-		$config   = $record->getChangelogConfig();
-		$changed  = $record->getChangedFields(true, 2);
-		$messages = array();
-		$required = array();
+		$record    = $this->form->getRecord();
+		$config    = $record->getChangelogConfig();
+		$relations = $config->getRelations();
+		$fields    = array_keys($this->form->Fields()->dataFields());
+		$messages  = ChangelogUtil::data_to_messages($data['FieldChangelogs']);
 
-		if (isset($data['FieldChangelogs']['new'])) {
-			foreach(ArrayLib::invert($data['FieldChangelogs']['new']) as $item) {
-				$messages[$item['FieldName']] = $item['EditSummary'];
+		// loop through each field, and if it is changed and a message required
+		// ensure we have one
+		foreach ($config->getFields() as $name => $settings) {
+			if (!in_array('required', $settings)) continue;
+			if (!in_array($name, $fields)) continue;
+
+			$original = $record->$name;
+			$current  = $data[$name];
+			$hasMsg   = isset($messages['root'][$name]) && strlen($messages['root'][$name]);
+
+			if ($original != $current && !$hasMsg) {
+				$this->validationError(
+					'FieldChangelogs',
+					sprintf('You must enter a changelog message for "%s"', $name),
+					'required'
+				);
+				return false;
 			}
 		}
 
-		foreach ($config->getFields() as $name => $options) {
-			if (in_array('required', $options)) $required[] = $name;
-		}
+		// loop through each relation and each record and do the same
+		foreach ($config->getRelations() as $relation => $class) {
+			if (!in_array($relation, $fields)) continue;
+			
+			$table  = $this->form->dataFieldByName($relation);
+			$fields = array_keys($table->getFieldTypes());
+			$class  = $table->sourceClass();
+			$config = ChangelogConfig::get($class);
 
-		foreach ($required as $name) {
-			$original = $record->$name;
-			$current  = $data[$name];
+			if (isset($data[$relation])) foreach ($data[$relation] as $id => $item) {
+				// dont validate new records
+				if (!is_numeric($id)) continue;
+				$record = DataObject::get_by_id($class, $id);
 
-			if ($original != $current && !strlen($messages[$name])) {
-				$this->validationError('FieldChangelogs', sprintf(
-					'You must enter a changelog message for the "%s" field.',
-					$name
-				), 'required');
+				// loop through each field
+				foreach ($config->getFields() as $field => $settings) {
+					if (!in_array('required', $settings)) continue;
+					if (!in_array($name, $fields)) continue;
 
-				return false;
+					$original = $record->$name;
+					$current  = $item[$name];
+					$hasMsg   = isset($messages[$relation][$id][$name]) && strlen($messages[$relation][$id][$name]);
+
+					if ($original != $current && !$hasMsg) {
+						$this->validationError(
+							'FieldChangelogs',
+							sprintf('You must enter a changelog message for "%s"', $name),
+							'required'
+						);
+						return false;
+					}
+				}
 			}
 		}
 

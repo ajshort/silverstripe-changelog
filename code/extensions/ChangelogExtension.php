@@ -109,37 +109,14 @@ class ChangelogExtension extends DataObjectDecorator {
 	 *
 	 * @param array $raw
 	 */
-	public function saveFieldChangelogs($raw) {
+	public function saveFieldChangelogs($data) {
 		$relations = $this->getChangelogConfig()->getRelations();
 		$messages  = array();
 
 		// assume that this method being called means this object is being
 		// directly saved form a form, so it's the root changelog
-		$this->isRoot = true;
-
-		if (isset($raw['new'])) {
-			foreach (ArrayLib::invert($raw['new']) as $item) {
-				$field   = $item['FieldName'];
-				$message = $item['EditSummary'];
-
-				$this->messages['root'][$field] = $message;
-			}
-		}
-
-		foreach ($relations as $relation => $class) {
-			$this->messages[$relation] = array();
-
-			if (isset($raw[$relation])) foreach ($raw[$relation] as $id => $raw) {
-				$this->messages[$relation][$id] = array();
-
-				foreach (ArrayLib::invert($raw) as $item) {
-					$field   = $item['FieldName'];
-					$message = $item['EditSummary'];
-
-					$this->messages[$relation][$id][$field] = $message;
-				}
-			}
-		}
+		$this->isRoot   = true;
+		$this->messages = ChangelogUtil::data_to_messages($data);
 	}
 
 	/**

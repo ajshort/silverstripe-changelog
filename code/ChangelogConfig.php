@@ -87,6 +87,9 @@ class ChangelogConfig {
 	/**
 	 * Registers a field to be change logged, along with additional options.
 	 *
+	 * Note that has_one relationships can be logged in the same way by just
+	 * registering "RelationID".
+	 *
 	 * @param string $name
 	 * @param array  $options
 	 */
@@ -109,13 +112,15 @@ class ChangelogConfig {
 	}
 
 	/**
-	 * Returns has_many relationships that should have their children change
-	 * logged.
+	 * Returns has_many and many_many relations that should have their children
+	 * changelogged.
 	 *
 	 * @return array
 	 */
 	public function getRelations() {
-		$relations = singleton($this->subjectClass)->has_many();
+		$hasMany   = singleton($this->subjectClass)->has_many();
+		$manyMany  = singleton($this->subjectClass)->many_many();
+		$relations = array_merge($manyMany, $hasMany);
 		$result    = array();
 
 		if ($relations) foreach ($relations as $relation => $class) {

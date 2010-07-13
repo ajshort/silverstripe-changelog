@@ -30,9 +30,16 @@ class FieldChangelog extends DataObject {
 	 * @return string
 	 */
 	public function getFieldType() {
-		return Extension::get_classname_without_arguments(
-			$this->Changelog()->getSubject()->db($this->FieldName)
-		);
+		$subject = $this->Changelog()->getSubject();
+		$field   = $this->FieldName;
+
+		if ($class = $subject->db($field)) {
+			return Extension::get_classname_without_arguments($class);
+		} elseif(substr($field, -2) == 'ID') {
+			if ($subject->has_one(substr($field, 0, -2))) return 'ForeignKey';
+		}
+
+		throw new Exception('The corresponding field type could not be found.');
 	}
 
 	/**

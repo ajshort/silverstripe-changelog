@@ -159,6 +159,7 @@ class ChangelogTransformation extends FormTransformation {
 	protected function getChangelogFormFields() {
 		Requirements::javascript(THIRDPARTY_DIR . '/jquery/jquery.js');
 		Requirements::javascript(THIRDPARTY_DIR . '/jquery-metadata/jquery.metadata.js');
+		Requirements::javascript(THIRDPARTY_DIR . '/jquery-livequery/jquery.livequery.js');
 		Requirements::javascript(THIRDPARTY_DIR . '/jquery-ui/jquery-ui-1.8rc3.custom.js');
 		Requirements::javascript(CHANGELOG_DIR  . '/javascript/ChangelogForm.js');
 		Requirements::css(THIRDPARTY_DIR . '/jquery-ui-themes/base/jquery.ui.all.css');

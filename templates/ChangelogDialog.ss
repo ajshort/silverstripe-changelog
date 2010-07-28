@@ -21,7 +21,7 @@
 	<div class="field">
 		<label class="left">Edit summary</label>
 		<div class="middleColumn">
-			<input class="text" type="text" name="EditSummary">
+			<input id="DialogEditSummary" class="text" type="text" name="DialogEditSummary">
 		</div>
 	</div>
 </div>

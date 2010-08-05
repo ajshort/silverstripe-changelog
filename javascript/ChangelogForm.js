@@ -101,7 +101,7 @@
 
 			if (!isPrompt && !isRequired) return;
 
-			var summaryInput = dialog.find('input[name=EditSummary]');
+			var summaryInput = dialog.find('#DialogEditSummary');
 			var requiredMsg  = dialog.find('#RequiredMessage');
 			var buttons      = {}
 

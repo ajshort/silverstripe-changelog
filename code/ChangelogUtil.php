@@ -15,6 +15,10 @@ class ChangelogUtil {
 	public static function data_to_messages($data) {
 		$messages = array();
 
+		if (!$data) {
+			return;
+		}
+
 		if (isset($data['new'])) {
 			foreach (ArrayLib::invert($data['new']) as $message) {
 				$name    = $message['FieldName'];

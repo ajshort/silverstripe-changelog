@@ -6,11 +6,15 @@
  * @package silverstripe-changelog
  */
 class ChangelogValidator extends Validator {
+	protected $enabled = true;
 
 	/**
 	 * @return bool
 	 */
 	public function php($data) {
+		if (!$this->enabled) {
+			return true;
+		}
 		$record    = $this->form->getRecord();
 		$config    = $record->getChangelogConfig();
 		$relations = $config->getRelations();
@@ -73,6 +77,14 @@ class ChangelogValidator extends Validator {
 		}
 
 		return true;
+	}
+
+
+	/**
+	 * Clears all the validation from this object.
+	 */
+	public function removeValidation(){
+		$this->enabled = false;
 	}
 
 	/**

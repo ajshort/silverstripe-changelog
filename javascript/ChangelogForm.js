@@ -129,11 +129,14 @@
 			dialog.find('.original').text(original);
 			dialog.find('.changed').text(input.val());
 
+			$('select').css('visibility', 'hidden');
+			
 			dialog.dialog({
 				draggable: false,
 				buttons: buttons,
 				modal: true,
 				overlay: { backgroundColor: '#000', opacity: .5 },
+				beforeClose: function(event, ui) { $('select').css('visibility', 'visible'); }, 
 				resizable: false,
 				width: 500
 			});

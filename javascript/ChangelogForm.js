@@ -13,13 +13,13 @@
 	/**
 	 * Creates a changelog table row.
 	 */
-	var createChangelogRow = function(table, type, field, class, title, original, changed) {
+	var createChangelogRow = function(table, type, field, clazz, title, original, changed) {
 		$('#FieldChangelogs .triggerOpened, #FieldChangelogs .contentMore').show();
 		$('#FieldChangelogs .triggerClosed').hide();
 		table.find('tr.notfound').remove();
 
 		var row = $('<tr>')
-			.addClass(class)
+			.addClass(clazz)
 			.appendTo(table.find('tbody'));
 
 		$('<input>', {
@@ -30,13 +30,13 @@
 
 		var summaryInput = $('<input>', {
 			type:  'text',
-			class: 'text',
+			'class': 'text',
 			name:  'FieldChangelogs' + type + '[EditSummary][]'
 		});
 
 		$('<td>', { text: title }).appendTo(row);
-		$('<td>', { class: 'original', text: summarise(original) }).appendTo(row);
-		$('<td>', { class: 'changed', text: summarise(changed) }).appendTo(row);
+		$('<td>', { 'class': 'original', text: summarise(original) }).appendTo(row);
+		$('<td>', { 'class': 'changed', text: summarise(changed) }).appendTo(row);
 		$('<td>', { html: summaryInput }).appendTo(row);
 	}
 
@@ -54,8 +54,8 @@
 		$(this).change(function () {
 			// convert the field name to a css class and try to find an existing
 			// changelog entry
-			var class = field.replace(/[^a-zA-Z0-9-_]/g, '-');
-			var exist = table.find('tr.' + class);
+			var clazz = field.replace(/[^a-zA-Z0-9-_]/g, '-');
+			var exist = table.find('tr.' + clazz);
 
 			if (exist.length) {
 				exist.find('td.changed').text(summarise(input.val()));
@@ -92,7 +92,7 @@
 
 			// check for an explitly defined title
 
-			createChangelogRow(table, type, name, class, title, original, input.val());
+			createChangelogRow(table, type, name, clazz, title, original, input.val());
 
 			// if the config options is set, prompt for a changelog message with
 			// a dialog
@@ -107,7 +107,7 @@
 
 			buttons['Save'] = function() {
 				var summary = summaryInput.val();
-				var input   = table.find('tr.' + class + ' input.text');
+				var input   = table.find('tr.' + clazz + ' input.text');
 
 				input.val(summary);
 				summaryInput.val('');
